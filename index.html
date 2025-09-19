@@ -9,14 +9,11 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
 
-  <!-- Preload critical resources -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="preconnect" href="https://cdnjs.cloudflare.com">
   
-  <!-- Google Font -->
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;600&display=swap" rel="stylesheet">
-  <!-- Font Awesome for icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <style>
@@ -184,6 +181,33 @@
       background:var(--muted);
       cursor:not-allowed;
     }
+    /* ===== ESTILO PARA EL BOTÓN DE TRADUCCIÓN (NUEVO) ===== */
+    .translate-btn {
+        background-color: #e8eaf6;
+        color: var(--accent);
+        border: 1px solid var(--accent);
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-family: 'Poppins', sans-serif;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 8px;
+        margin-bottom: 8px;
+        align-self: flex-start;
+        transition: all 0.3s ease;
+        border-radius: 20px;
+    }
+    .translate-btn:hover {
+        background-color: var(--accent);
+        color: #fff;
+    }
+    .translate-btn:disabled {
+        border-color: var(--muted);
+        color: var(--muted);
+        cursor: not-allowed;
+        background-color: #f0f0f0;
+    }
+    /* ======================================================= */
     .error-message {
       background: #ffebee;
       color: #c62828;
@@ -280,7 +304,6 @@
     Conectado a APIs de noticias en tiempo real
   </div>
 
-  <!-- Columna en Español (visible por defecto) -->
   <div id="column-es" class="column column-es">
     <div class="column-header">
       <i class="fas fa-language"></i>
@@ -292,7 +315,6 @@
     <button id="load-more-es" class="load-more">Cargar más noticias</button>
   </div>
 
-  <!-- Columna en Inglés (oculta por defecto) -->
   <div id="column-en" class="column column-en">
     <div class="column-header">
       <i class="fas fa-language"></i>
@@ -324,8 +346,8 @@
 
     // Terms that might cause false positives
     const falsePositiveTerms = ['bebida', 'infusión', 'té', 'tea drink', 'herbal tea', 'chai tea', 
-                               'green tea', 'black tea', 'tea party', 'tea time', 'té verde', 
-                               'té negro', 'té rojo', 'té blanco'];
+                                'green tea', 'black tea', 'tea party', 'tea time', 'té verde', 
+                                'té negro', 'té rojo', 'té blanco'];
 
     // DOM references
     const newsEsContainer = document.getElementById('news-es');
@@ -352,7 +374,7 @@
     function generateArticleId(article) {
       const titlePart = article.title ? article.title.substring(0, 30).replace(/\s+/g, '_') : 'no_title';
       const sourcePart = article.source && article.source.name ? 
-                         article.source.name.replace(/\s+/g, '_') : 'no_source';
+                           article.source.name.replace(/\s+/g, '_') : 'no_source';
       return `${titlePart}_${sourcePart}`;
     }
 
@@ -523,29 +545,41 @@
 
     // Render articles
     function renderArticles(articles, container, lang) {
-      if (!articles.length) {
-        container.innerHTML = `<div class="error-message">
-          <i class="fas fa-exclamation-circle"></i>
-          ${lang === 'es' ? 
-            'No se encontraron noticias sobre autismo en este momento.' : 
-            'No autism-related news found at this time.'}
-        </div>`;
+      if (!articles || articles.length === 0) { // Check for null or empty articles array
+        if(container.innerHTML.includes('loading')) {
+            container.innerHTML = `<div class="error-message">
+              <i class="fas fa-exclamation-circle"></i>
+              ${lang === 'es' ? 
+                'No se encontraron noticias sobre autismo en este momento.' : 
+                'No autism-related news found at this time.'}
+            </div>`;
+        }
         return;
       }
 
-      container.innerHTML = '';
+      const fragment = document.createDocumentFragment(); // Use a fragment for performance
       articles.forEach((article, index) => {
         const card = document.createElement('div');
         card.className = 'card';
         
         const publishedDate = new Date(article.publishedAt);
-        const formattedDate = publishedDate.toLocaleDateString(
+        const formattedDate = !isNaN(publishedDate) ? publishedDate.toLocaleDateString(
           lang === 'es' ? 'es-ES' : 'en-US',
           { year: 'numeric', month: 'long', day: 'numeric' }
-        );
+        ) : 'Fecha no disponible';
         
         const fallbackImage = 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=400&h=250&fit=crop&auto=format&q=80';
         
+        // ===== MODIFICACIÓN: Añadir botón de traducción para noticias en inglés =====
+        const translateButtonHtml = lang === 'en' ? `
+            <button class="translate-btn"
+                    data-title="${(article.title || '').replace(/"/g, '&quot;')}"
+                    data-desc="${(article.description || '').replace(/"/g, '&quot;')}">
+                <i class="fas fa-language"></i> Traducir al español
+            </button>
+        ` : '';
+        // =========================================================================
+
         card.innerHTML = `
           <img src="${article.urlToImage || fallbackImage}" 
                alt="${article.title}" 
@@ -556,22 +590,28 @@
             <h3>${article.title}</h3>
             <div class="source"><i class="fas fa-newspaper"></i> ${article.source.name || 'Unknown Source'}</div>
             ${article.description ? `<div class="description">${article.description}</div>` : ''}
+            ${translateButtonHtml}
             <a href="${article.url}" target="_blank" rel="noopener noreferrer">
               ${lang === 'es' ? 'Leer más →' : 'Read more →'}
             </a>
           </div>
         `;
         
-        container.appendChild(card);
+        fragment.appendChild(card);
         
-        // Animate card appearance with requestAnimationFrame for better performance
         requestAnimationFrame(() => {
           setTimeout(() => {
             card.classList.add('visible');
           }, index * 100);
         });
       });
+
+      if(container.querySelector('.loading')) {
+          container.innerHTML = '';
+      }
+      container.appendChild(fragment);
     }
+
 
     // Load and display articles for Spanish
     async function loadAndShowArticlesEs() {
@@ -582,35 +622,18 @@
       loadMoreEsBtn.textContent = 'Cargando...';
 
       try {
-        // Show API status
         apiStatus.style.display = 'block';
-
-        // Load articles for Spanish
         const newArticlesEs = await fetchNews('es', currentPageEs);
 
-        // Add new articles to existing ones
         if (newArticlesEs.length > 0) {
           allArticlesEs = [...allArticlesEs, ...newArticlesEs];
-        }
-
-        // Calculate articles to show
-        const articlesToShowEs = allArticlesEs.slice(0, currentPageEs * articlesPerPage);
-
-        // Render articles
-        renderArticles(articlesToShowEs, newsEsContainer, 'es');
-
-        // Update pagination
-        const hasNewEs = newArticlesEs.length > 0;
-
-        if (hasNewEs) {
+          renderArticles(allArticlesEs, newsEsContainer, 'es'); // Render all articles
           currentPageEs++;
           loadMoreEsBtn.disabled = false;
           loadMoreEsBtn.textContent = 'Cargar más noticias';
           loadMoreEsBtn.style.display = 'block';
         } else {
           loadMoreEsBtn.style.display = 'none';
-          
-          // Mostrar mensaje si no hay más noticias
           if (currentPageEs > 1) {
             const noMoreNews = document.createElement('div');
             noMoreNews.className = 'error-message';
@@ -618,7 +641,6 @@
             noMoreNews.style.color = '#2e7d32';
             noMoreNews.style.borderLeftColor = '#4caf50';
             noMoreNews.innerHTML = `<i class="fas fa-info-circle"></i> No hay más noticias disponibles.`;
-            
             loadMoreEsBtn.parentNode.insertBefore(noMoreNews, loadMoreEsBtn.nextSibling);
           }
         }
@@ -637,6 +659,7 @@
         loadMoreEsBtn.textContent = 'Cargar más noticias';
       } finally {
         isLoadingEs = false;
+        apiStatus.style.display = 'none';
       }
     }
 
@@ -649,27 +672,12 @@
       loadMoreEnBtn.textContent = 'Loading...';
 
       try {
-        // Show API status
         apiStatus.style.display = 'block';
-
-        // Load articles for English
         const newArticlesEn = await fetchNews('en', currentPageEn);
 
-        // Add new articles to existing ones
         if (newArticlesEn.length > 0) {
           allArticlesEn = [...allArticlesEn, ...newArticlesEn];
-        }
-
-        // Calculate articles to show
-        const articlesToShowEn = allArticlesEn.slice(0, currentPageEn * articlesPerPage);
-
-        // Render articles
-        renderArticles(articlesToShowEn, newsEnContainer, 'en');
-
-        // Update pagination
-        const hasNewEn = newArticlesEn.length > 0;
-
-        if (hasNewEn) {
+          renderArticles(allArticlesEn, newsEnContainer, 'en'); // Render all articles
           currentPageEn++;
           loadMoreEnBtn.disabled = false;
           loadMoreEnBtn.textContent = 'Load more news';
@@ -677,7 +685,6 @@
         } else {
           loadMoreEnBtn.style.display = 'none';
           
-          // Mostrar mensaje si no hay más noticias
           if (currentPageEn > 1) {
             const noMoreNews = document.createElement('div');
             noMoreNews.className = 'error-message';
@@ -704,38 +711,95 @@
         loadMoreEnBtn.textContent = 'Load more news';
       } finally {
         isLoadingEn = false;
+        apiStatus.style.display = 'none';
       }
     }
 
     // Toggle between languages
     function toggleLanguage() {
-      if (columnEs.style.display === 'block') {
-        // Switch to English
+      if (columnEs.style.display === 'block' || columnEs.classList.contains('active')) {
         columnEs.style.display = 'none';
+        columnEs.classList.remove('active');
         columnEn.style.display = 'block';
+        columnEn.classList.add('active');
         languageToggle.innerHTML = '<i class="fas fa-language"></i> Ver en español';
         
-        // Load English articles if not loaded yet
         if (allArticlesEn.length === 0) {
           loadAndShowArticlesEn();
         }
       } else {
-        // Switch to Spanish
         columnEn.style.display = 'none';
+        columnEn.classList.remove('active');
         columnEs.style.display = 'block';
+        columnEs.classList.add('active');
         languageToggle.innerHTML = '<i class="fas fa-language"></i> Ver en inglés';
       }
     }
+
+    /* ===== NUEVA FUNCIONALIDAD DE TRADUCCIÓN ===== */
+    async function handleTranslation(event) {
+        // Solo actuar si se hace clic en un botón de traducción
+        if (!event.target.classList.contains('translate-btn')) return;
+
+        const btn = event.target;
+        const card = btn.closest('.card');
+        const titleEl = card.querySelector('h3');
+        const descEl = card.querySelector('.description');
+
+        // Obtener el texto original guardado en los atributos data-*
+        const originalTitle = btn.dataset.title;
+        const originalDesc = btn.dataset.desc;
+
+        if (!originalTitle && !originalDesc) return;
+
+        // Desactivar el botón y mostrar estado de carga
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traduciendo...';
+
+        try {
+            // Combinar título y descripción para una única llamada a la API
+            const combinedText = `${originalTitle} ||| ${originalDesc}`;
+            const apiUrl = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(combinedText)}&langpair=en|es`;
+            
+            const response = await fetch(apiUrl);
+            if (!response.ok) throw new Error('API response not OK');
+            
+            const data = await response.json();
+            
+            if (data.responseData && data.responseData.translatedText) {
+                const [translatedTitle, translatedDesc] = data.responseData.translatedText.split(' ||| ');
+                
+                // Actualizar el DOM con el texto traducido
+                if (titleEl && translatedTitle) {
+                    titleEl.textContent = translatedTitle.trim();
+                }
+                if (descEl && translatedDesc) {
+                    descEl.textContent = translatedDesc.trim();
+                }
+                btn.innerHTML = '<i class="fas fa-check"></i> Traducido';
+            } else {
+                throw new Error('Invalid translation data');
+__                
+            }
+        } catch (error) {
+            console.error('Translation failed:', error);
+            btn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Error';
+            // Opcional: Reactivar el botón para que el usuario pueda reintentar
+            setTimeout(() => {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-language"></i> Traducir al español';
+            }, 3000);
+        }
+    }
+    // ==============================================
+
 
     // Event listeners
     loadMoreEsBtn.addEventListener('click', loadAndShowArticlesEs);
     loadMoreEnBtn.addEventListener('click', loadAndShowArticlesEn);
     languageToggle.addEventListener('click', toggleLanguage);
-    backButton.addEventListener('click', function() {
-      columnEn.style.display = 'none';
-      columnEs.style.display = 'block';
-      languageToggle.innerHTML = '<i class="fas fa-language"></i> Ver en inglés';
-    });
+    backButton.addEventListener('click', toggleLanguage);
+    newsEnContainer.addEventListener('click', handleTranslation); // <-- Listener para la traducción
 
     // Add touch events for better mobile experience
     [loadMoreEsBtn, loadMoreEnBtn, languageToggle, backButton].forEach(btn => {
@@ -750,8 +814,12 @@
 
     // Initial load for Spanish
     document.addEventListener('DOMContentLoaded', function() {
-      // Initial load with a small delay to allow rendering
-      setTimeout(loadAndShowArticlesEs, 100);
+      // Small delay to ensure everything is rendered before fetching
+      setTimeout(() => {
+        if(allArticlesEs.length === 0) {
+            loadAndShowArticlesEs();
+        }
+      }, 100);
     });
 
     // Prevent zoom on double-tap
