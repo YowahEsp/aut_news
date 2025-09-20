@@ -40,6 +40,29 @@
       text-align:center;
       margin-bottom:30px;
       position: relative;
+      background-image: url('https://www.comunidad.madrid/sites/default/files/styles/image_style_16_9/public/img/logos-simbolos/shutterstock_1040626540.jpg?itok=yPO3qvf4');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      padding: 40px 20px;
+      border-radius: 12px;
+      color: white;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.7);
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.4);
+      border-radius: 12px;
+      z-index: 1;
+    }
+    header * {
+      position: relative;
+      z-index: 2;
     }
     header h1{
       font-size:1.8rem;
@@ -47,22 +70,14 @@
       margin-bottom:8px;
     }
     header p{
-      color:var(--muted);
-      font-size:0.95rem;
+      color: rgba(255, 255, 255, 0.9);
+      font-size:0.8rem;
       margin-bottom: 20px;
-    }
-    .header-image {
-      width: 100%;
-      max-height: 200px;
-      object-fit: cover;
-      border-radius: 12px;
-      margin-bottom: 15px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
     .language-toggle {
       position: absolute;
-      top: 0;
-      right: 0;
+      top: 15px;
+      right: 15px;
       background: var(--accent);
       color: white;
       border: none;
@@ -72,6 +87,7 @@
       cursor: pointer;
       box-shadow: 0 2px 5px rgba(0,0,0,0.2);
       transition: all 0.3s ease;
+      z-index: 3;
     }
     .language-toggle:active {
       transform: scale(0.95);
@@ -252,7 +268,12 @@
     @media(max-width:768px){
       header h1 {
         font-size: 1.6rem;
-        padding-right: 100px; /* Espacio para el botón */
+      }
+      .language-toggle {
+        top: 10px;
+        right: 10px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
       }
       .column-header h2 {
         font-size: 1.2rem;
@@ -267,14 +288,17 @@
       }
       header {
         margin-bottom: 20px;
+        padding: 30px 15px;
       }
       header h1 {
         font-size: 1.4rem;
-        padding-right: 90px;
+      }
+      header p {
+        font-size: 0.75rem;
       }
       .language-toggle {
-        padding: 6px 12px;
-        font-size: 0.8rem;
+        padding: 5px 10px;
+        font-size: 0.75rem;
       }
       .card-content {
         padding: 14px;
@@ -300,7 +324,6 @@
 </head>
 <body>
   <header>
-    <img src="https://www.comunidad.madrid/sites/default/files/styles/image_style_16_9/public/img/logos-simbolos/shutterstock_1040626540.jpg?itok=yPO3qvf4" alt="Noticias sobre Autismo" class="header-image">
     <h1>NOTICIAS SOBRE AUTISMO</h1>
     <p>Desarrollado con ❤️ para familias y profesionales</p>
     <button id="language-toggle" class="language-toggle">
@@ -788,7 +811,6 @@
                 btn.innerHTML = '<i class="fas fa-check"></i> Traducido';
             } else {
                 throw new Error('Invalid translation data');
-__                
             }
         } catch (error) {
             console.error('Translation failed:', error);
